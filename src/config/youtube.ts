@@ -10,7 +10,7 @@ export const YOUTUBE_CONFIG = {
   // 获取方式：访问你的 YouTube 频道，URL 中的部分就是频道 ID
   // 例如：https://www.youtube.com/@PawfectEncounters
   // 频道 ID 可能是：UCxxxxxxxxxxxxxxxxxxx 或 @PawfectEncounters
-  CHANNEL_ID: '@pawfectencounters',
+  CHANNEL_ID: 'UCA33eAglwhd7N_zwbmSE7HA',
   
   // 每次获取的视频数量
   MAX_RESULTS: 8,
