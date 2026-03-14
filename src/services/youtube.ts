@@ -68,17 +68,22 @@ function formatDuration(duration: string): string {
 // 获取频道信息
 export async function getChannelInfo(): Promise<YouTubeChannel | null> {
   try {
-    const response = await fetch(
-      `${YOUTUBE_API_BASE}/channels?part=snippet,statistics&id=${YOUTUBE_CONFIG.CHANNEL_ID}&key=${YOUTUBE_CONFIG.API_KEY}`
-    );
+    const url = `${YOUTUBE_API_BASE}/channels?part=snippet,statistics&id=${YOUTUBE_CONFIG.CHANNEL_ID}&key=${YOUTUBE_CONFIG.API_KEY}`;
+    console.log('Fetching channel info:', url);
+    
+    const response = await fetch(url);
     
     if (!response.ok) {
-      throw new Error('Failed to fetch channel info');
+      const errorData = await response.json();
+      console.error('API Error:', errorData);
+      throw new Error(errorData.error?.message || 'Failed to fetch channel info');
     }
     
     const data = await response.json();
+    console.log('Channel data:', data);
     
     if (!data.items || data.items.length === 0) {
+      console.warn('No channel found for ID:', YOUTUBE_CONFIG.CHANNEL_ID);
       return null;
     }
     
@@ -94,7 +99,7 @@ export async function getChannelInfo(): Promise<YouTubeChannel | null> {
     };
   } catch (error) {
     console.error('Error fetching channel info:', error);
-    return null;
+    throw error;
   }
 }
 
@@ -102,49 +107,64 @@ export async function getChannelInfo(): Promise<YouTubeChannel | null> {
 export async function getChannelVideos(): Promise<YouTubeVideo[]> {
   try {
     // 首先获取频道的上传播放列表 ID
-    const channelResponse = await fetch(
-      `${YOUTUBE_API_BASE}/channels?part=contentDetails&id=${YOUTUBE_CONFIG.CHANNEL_ID}&key=${YOUTUBE_CONFIG.API_KEY}`
-    );
+    const channelUrl = `${YOUTUBE_API_BASE}/channels?part=contentDetails&id=${YOUTUBE_CONFIG.CHANNEL_ID}&key=${YOUTUBE_CONFIG.API_KEY}`;
+    console.log('Fetching channel playlist:', channelUrl);
+    
+    const channelResponse = await fetch(channelUrl);
     
     if (!channelResponse.ok) {
-      throw new Error('Failed to fetch channel details');
+      const errorData = await channelResponse.json();
+      console.error('Channel API Error:', errorData);
+      throw new Error(errorData.error?.message || 'Failed to fetch channel details');
     }
     
     const channelData = await channelResponse.json();
+    console.log('Channel playlist data:', channelData);
     
     if (!channelData.items || channelData.items.length === 0) {
+      console.warn('No channel playlist found');
       return [];
     }
     
     const uploadsPlaylistId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
+    console.log('Uploads playlist ID:', uploadsPlaylistId);
     
     // 获取播放列表中的视频
-    const playlistResponse = await fetch(
-      `${YOUTUBE_API_BASE}/playlistItems?part=snippet&playlistId=${uploadsPlaylistId}&maxResults=${YOUTUBE_CONFIG.MAX_RESULTS}&key=${YOUTUBE_CONFIG.API_KEY}`
-    );
+    const playlistUrl = `${YOUTUBE_API_BASE}/playlistItems?part=snippet&playlistId=${uploadsPlaylistId}&maxResults=${YOUTUBE_CONFIG.MAX_RESULTS}&key=${YOUTUBE_CONFIG.API_KEY}`;
+    console.log('Fetching playlist items:', playlistUrl);
+    
+    const playlistResponse = await fetch(playlistUrl);
     
     if (!playlistResponse.ok) {
-      throw new Error('Failed to fetch playlist items');
+      const errorData = await playlistResponse.json();
+      console.error('Playlist API Error:', errorData);
+      throw new Error(errorData.error?.message || 'Failed to fetch playlist items');
     }
     
     const playlistData = await playlistResponse.json();
+    console.log('Playlist items:', playlistData);
     
     if (!playlistData.items || playlistData.items.length === 0) {
+      console.warn('No videos in playlist');
       return [];
     }
     
     // 获取视频详细信息（包括观看次数、时长等）
     const videoIds = playlistData.items.map((item: any) => item.snippet.resourceId.videoId).join(',');
     
-    const videosResponse = await fetch(
-      `${YOUTUBE_API_BASE}/videos?part=snippet,statistics,contentDetails&id=${videoIds}&key=${YOUTUBE_CONFIG.API_KEY}`
-    );
+    const videosUrl = `${YOUTUBE_API_BASE}/videos?part=snippet,statistics,contentDetails&id=${videoIds}&key=${YOUTUBE_CONFIG.API_KEY}`;
+    console.log('Fetching video details:', videosUrl);
+    
+    const videosResponse = await fetch(videosUrl);
     
     if (!videosResponse.ok) {
-      throw new Error('Failed to fetch video details');
+      const errorData = await videosResponse.json();
+      console.error('Videos API Error:', errorData);
+      throw new Error(errorData.error?.message || 'Failed to fetch video details');
     }
     
     const videosData = await videosResponse.json();
+    console.log('Video details:', videosData);
     
     // 合并数据
     return playlistData.items.map((playlistItem: any) => {
@@ -166,7 +186,7 @@ export async function getChannelVideos(): Promise<YouTubeVideo[]> {
     });
   } catch (error) {
     console.error('Error fetching channel videos:', error);
-    return [];
+    throw error;
   }
 }
 

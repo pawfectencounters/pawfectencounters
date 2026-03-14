@@ -22,9 +22,15 @@ export function YouTubePage() {
       return;
     }
 
+    console.log('YouTube Config:', {
+      API_KEY: YOUTUBE_CONFIG.API_KEY.substring(0, 10) + '...',
+      CHANNEL_ID: YOUTUBE_CONFIG.CHANNEL_ID,
+    });
+
     async function fetchData() {
       try {
         setLoading(true);
+        setError(null);
         
         // 并行获取频道信息和视频
         const [channelData, videosData] = await Promise.all([
@@ -32,14 +38,23 @@ export function YouTubePage() {
           getChannelVideos(),
         ]);
         
+        console.log('Fetched channel:', channelData);
+        console.log('Fetched videos:', videosData);
+        
         if (channelData) {
           setChannel(channelData);
+        } else {
+          setError('未找到频道信息，请检查频道 ID 是否正确');
         }
         
         setVideos(videosData);
-      } catch (err) {
+        
+        if (videosData.length === 0 && channelData) {
+          setError('频道信息已获取，但未找到视频。可能是频道没有公开视频。');
+        }
+      } catch (err: any) {
         console.error('Error fetching YouTube data:', err);
-        setError('获取 YouTube 数据失败，请检查 API Key 和频道 ID 是否正确');
+        setError(`获取 YouTube 数据失败: ${err.message || '未知错误'}`);
       } finally {
         setLoading(false);
       }
@@ -59,15 +74,31 @@ export function YouTubePage() {
           <Card className="glass-card border-orange-500/30">
             <CardContent className="p-8 text-center">
               <AlertCircle className="h-12 w-12 text-orange-500 mx-auto mb-4" />
-              <h2 className="text-xl font-bold mb-2">配置 needed</h2>
+              <h2 className="text-xl font-bold mb-2">配置错误</h2>
               <p className="text-muted-foreground mb-4">{error}</p>
+              
+              {/* 显示当前配置 */}
+              <div className="text-sm text-left max-w-2xl mx-auto mb-4">
+                <div className="bg-secondary/50 p-4 rounded-lg">
+                  <p className="font-semibold mb-2">当前配置：</p>
+                  <p className="font-mono text-xs break-all">
+                    CHANNEL_ID: {YOUTUBE_CONFIG.CHANNEL_ID}
+                  </p>
+                  <p className="font-mono text-xs mt-1">
+                    API_KEY: {YOUTUBE_CONFIG.API_KEY === 'YOUR_YOUTUBE_API_KEY_HERE' ? '未配置' : '已配置'}
+                  </p>
+                </div>
+              </div>
+              
               <div className="text-sm text-muted-foreground bg-secondary/50 p-4 rounded-lg text-left max-w-2xl mx-auto">
                 <p className="font-semibold mb-2">配置步骤：</p>
                 <ol className="list-decimal list-inside space-y-1">
                   <li>访问 <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google Cloud Console</a></li>
                   <li>创建新项目并启用 YouTube Data API v3</li>
                   <li>创建 API Key</li>
+                  <li>获取频道 ID：访问 <a href="https://www.youtube.com/account_advanced" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">YouTube 高级设置</a></li>
                   <li>在 src/config/youtube.ts 中填写 API_KEY 和 CHANNEL_ID</li>
+                  <li>重新运行 <code className="bg-primary/20 px-1 rounded">npm run build</code></li>
                 </ol>
               </div>
             </CardContent>
